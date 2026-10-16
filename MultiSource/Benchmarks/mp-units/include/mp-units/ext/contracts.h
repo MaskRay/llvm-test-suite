@@ -1,0 +1,67 @@
+// The MIT License (MIT)
+//
+// Copyright (c) 2018 Mateusz Pusz
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+
+#pragma once
+
+#ifndef MP_UNITS_IN_MODULE_INTERFACE
+
+#include <mp-units/bits/hacks.h>
+#include <mp-units/compat_macros.h>
+
+#if MP_UNITS_API_CONTRACTS == 1 || (!defined MP_UNITS_API_CONTRACTS && __cpp_contracts >= 202502L)
+
+// C++26 contracts are a language feature - no headers needed
+
+namespace mp_units::detail {
+
+// deliberately not constexpr and never defined - calling it poisons the enclosing constant
+// expression, which is how contract violations are reported during constant evaluation
+// (GCC 16 fails to constant-evaluate `contract_assert` predicates in many valid contexts)
+void contract_violation();
+
+// deliberately not constexpr - hides `contract_assert` from the constant evaluator, which
+// (in some GCC 16 snapshots) chokes on contract assertions even in the not-taken branch of
+// `if consteval`; a non-constexpr function body is never constant-evaluated
+inline void runtime_contract_check(bool pred) { contract_assert(pred); }
+
+}  // namespace mp_units::detail
+
+#elif MP_UNITS_API_CONTRACTS == 2 || (!defined MP_UNITS_API_CONTRACTS && __has_include(<gsl-lite/gsl-lite.hpp>))
+
+#if MP_UNITS_HOSTED
+#include <gsl-lite/gsl-lite.hpp>
+#else
+#include <mp-units/bits/requires_hosted.h>
+#endif
+
+#elif MP_UNITS_API_CONTRACTS == 3 || (!defined MP_UNITS_API_CONTRACTS && __has_include(<gsl/gsl>))
+
+#if MP_UNITS_HOSTED
+#include <gsl/gsl>
+#include <cassert>
+#else
+#include <mp-units/bits/requires_hosted.h>
+#endif
+
+#endif
+
+#endif  // MP_UNITS_IN_MODULE_INTERFACE
